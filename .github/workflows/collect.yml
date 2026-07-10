@@ -5,12 +5,12 @@ on:
 
 env:
   COLLECTOR_IMAGE: ghcr.io/sheng9571-ctf/crypto-spot-orderbook:latest
-  COLLECT_DURATION: 19800  # 5h30m in seconds
+  COLLECT_DURATION: 120  # 2 minutes (testing)
 
 jobs:
   collect:
     runs-on: ubuntu-latest
-    timeout-minutes: 350  # ~5h50m, safety margin before GitHub's 6h limit
+    timeout-minutes: 10
 
     steps:
       - name: Log in to GitHub Container Registry
