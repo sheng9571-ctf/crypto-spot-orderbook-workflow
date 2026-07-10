@@ -1,0 +1,57 @@
+name: Collect Orderbook Data
+
+on:
+  workflow_dispatch:
+
+env:
+  COLLECTOR_IMAGE: ghcr.io/sheng9571-ctf/crypto-spot-orderbook:latest
+  COLLECT_DURATION: 120  # 2 minutes (testing)
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull collector image
+        run: docker pull ${{ env.COLLECTOR_IMAGE }}
+
+      - name: Checkout collector source
+        uses: actions/checkout@v4
+        with:
+          repository: sheng9571-ctf/crypto-spot-orderbook
+          token: ${{ secrets.COLLECTOR_REPO_PAT }}
+          path: collector
+
+      - name: Create data directory
+        run: mkdir -p collector/data && chmod 777 collector/data
+
+      - name: Run collector
+        run: |
+          docker run --rm \
+            --name collector \
+            -v ${{ github.workspace }}/collector/src:/opt/src:ro \
+            -v ${{ github.workspace }}/collector/config:/opt/config:ro \
+            -v ${{ github.workspace }}/collector/data:/opt/data \
+            -e HF_TOKEN=${{ secrets.HF_TOKEN }} \
+            -e TURSO_URL=${{ secrets.TURSO_URL }} \
+            -e TURSO_TOKEN=${{ secrets.TURSO_TOKEN }} \
+            -e GITHUB_TOKEN=${{ secrets.GH_DISPATCH_TOKEN }} \
+            -e GITHUB_RUN_ID=${{ github.run_id }} \
+            ${{ env.COLLECTOR_IMAGE }} \
+            python3 -m src.main &
+
+          COLLECTOR_PID=$!
+
+          # Run for COLLECT_DURATION then send SIGTERM for graceful shutdown
+          sleep ${{ env.COLLECT_DURATION }}
+          docker stop --time 120 collector || true
+
+          wait $COLLECTOR_PID || true
