@@ -6,6 +6,7 @@ on:
 env:
   COLLECTOR_IMAGE: ghcr.io/sheng9571-ctf/crypto-spot-orderbook:latest
   COLLECT_DURATION: 120  # 2 minutes (testing)
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 
 jobs:
   collect:
@@ -18,13 +19,13 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.COLLECTOR_REPO_PAT }}
 
       - name: Pull collector image
         run: docker pull ${{ env.COLLECTOR_IMAGE }}
 
       - name: Checkout collector source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: sheng9571-ctf/crypto-spot-orderbook
           token: ${{ secrets.COLLECTOR_REPO_PAT }}
