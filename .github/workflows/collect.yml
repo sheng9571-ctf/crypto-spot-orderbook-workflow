@@ -34,6 +34,25 @@ jobs:
       - name: Create data directory
         run: mkdir -p collector/data && chmod 777 collector/data
 
+      - name: Test Binance connectivity
+        run: |
+          docker run --rm ${{ env.COLLECTOR_IMAGE }} \
+            python3 -c "
+          import asyncio, websockets
+          async def test():
+              try:
+                  ws = await asyncio.wait_for(
+                      websockets.connect('wss://stream.binance.com:9443/ws/btcusdt@bookTicker'),
+                      timeout=10
+                  )
+                  msg = await asyncio.wait_for(ws.recv(), timeout=10)
+                  print(f'SUCCESS: received {len(msg)} bytes')
+                  await ws.close()
+              except Exception as e:
+                  print(f'FAILED: {type(e).__name__}: {e}')
+          asyncio.run(test())
+          "
+
       - name: Run collector
         run: |
           docker run --rm \
